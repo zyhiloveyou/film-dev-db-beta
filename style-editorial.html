@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1d23">
+<title>黑白胶片显影时间库 · Film Dev Times</title>
+<style>
+
+:root{
+  --bg:#faf8f3; --card:#fffefb; --ink:#1a1a16; --sub:#6f6c62; --line:#e3ded1;
+  --acc:#a8342a; --acc-soft:#f5e8e5; --ok:#2f6b45; --warn:#a8342a;
+  --chip:#f1ece0; --chip-ink:#3b382f; --radius:0px; --shadow:none;
+  --serif:Georgia,"Times New Roman","Songti SC","Noto Serif SC",serif;
+  --sans:"Helvetica Neue",Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14.5px/1.6 var(--sans);
+  background-image:linear-gradient(rgba(0,0,0,.012) 1px,transparent 1px);background-size:100% 28px}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font:inherit;color:inherit}
+
+header{position:sticky;top:0;z-index:50;background:rgba(250,248,243,.97);backdrop-filter:blur(6px);
+  padding:18px 18px 12px;display:flex;align-items:flex-end;gap:12px;border-bottom:3px double var(--ink)}
+header h1{font-family:var(--serif);font-size:25px;font-weight:400;letter-spacing:-.3px;flex:1;line-height:1.15}
+header h1 small{display:block;font-family:var(--sans);font-size:10.5px;color:var(--sub);
+  letter-spacing:2.5px;text-transform:uppercase;margin-top:6px;font-weight:600}
+.icon-btn{width:34px;height:34px;border:1px solid var(--line);border-radius:0;display:flex;
+  align-items:center;justify-content:center;font-size:15px;background:transparent;flex:none;color:var(--sub)}
+#btn-dark{display:none}
+
+nav.tabs{position:sticky;top:0;z-index:49;display:flex;background:var(--bg);
+  border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{flex:1;min-width:92px;padding:13px 6px;font-size:10.5px;letter-spacing:1.8px;
+  text-transform:uppercase;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap;font-weight:600}
+nav.tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
+
+main{max-width:760px;margin:0 auto;padding:16px 16px 80px}
+section.page{display:none}
+section.page.on{display:block}
+
+.searchbar{position:relative;margin:8px 0 14px}
+.searchbar input{width:100%;padding:11px 36px 11px 0;border:none;border-bottom:1px solid var(--ink);
+  border-radius:0;background:transparent;outline:none;font-size:16px;font-family:var(--serif)}
+.searchbar input:focus{border-bottom:2px solid var(--acc)}
+.searchbar .mag{position:absolute;right:4px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:14px}
+.hot{display:flex;gap:0;flex-wrap:wrap;margin:0 0 18px;border-top:1px solid var(--line)}
+.hot button{background:transparent;color:var(--ink);padding:10px 14px 10px 0;font-size:12.5px;
+  border-bottom:1px solid var(--line);margin-right:14px}
+.hint{color:var(--sub);font-size:13px;text-align:center;padding:34px 10px;font-family:var(--serif);font-style:italic}
+
+.film-list{display:flex;flex-direction:column;gap:0;padding-bottom:6px}
+.film-letter{font-family:var(--serif);font-size:13px;color:var(--acc);padding:18px 0 6px;font-weight:700;
+  border-bottom:1px solid var(--ink);letter-spacing:3px}
+.film-item{display:flex;align-items:baseline;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);background:transparent}
+.film-item .nm{flex:1;font-size:15px;font-family:var(--serif)}
+.film-item .cnt{color:var(--sub);font-size:10.5px;letter-spacing:.5px}
+.film-item .fav{font-size:14px;color:#c3bcac;width:30px;height:30px}
+.film-item .fav.on{color:var(--acc)}
+
+.view-head{display:flex;align-items:baseline;gap:10px;margin:6px 0 14px;border-bottom:1px solid var(--ink);padding-bottom:10px}
+.view-head .back{width:30px;height:30px;border:1px solid var(--line);background:transparent;font-size:14px;flex:none;color:var(--sub)}
+.view-head h2{font-size:21px;flex:1;font-family:var(--serif);font-weight:400}
+.ctl{position:sticky;top:104px;z-index:40;background:var(--bg);padding:10px 0}
+.ctl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.seg{display:flex;border:1px solid var(--ink);flex:1;min-width:230px;overflow:hidden}
+.seg button{flex:1;padding:9px 4px;font-size:11px;color:var(--sub);letter-spacing:1.2px;text-transform:uppercase;font-weight:600}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.chips{display:flex;gap:0;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;background:transparent;color:var(--sub);padding:8px 13px;font-size:12px;border-bottom:2px solid transparent}
+.chips button.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:700}
+.chips .dev-select{width:100%;padding:10px 4px;border:none;border-bottom:1px solid var(--ink);background:transparent;
+  font-size:14px;outline:none;font-family:var(--serif);flex:none}
+.tempwrap{display:flex;align-items:center;gap:10px;flex:1;min-width:200px}
+.tempwrap input[type=range]{flex:1;accent-color:var(--acc)}
+.tempwrap .tv{font-family:var(--serif);font-weight:700;min-width:54px;text-align:center;font-size:15px;color:var(--acc)}
+.note-line{color:var(--sub);font-size:11.5px;padding:2px 0 12px;font-style:italic;font-family:var(--serif)}
+
+.rcard{background:transparent;border:none;border-top:1px solid var(--ink);padding:0 0 6px;margin-bottom:18px}
+.rcard .rhead{display:flex;align-items:baseline;gap:10px;padding:12px 0 6px}
+.rcard .rhead .dn{font-family:var(--serif);font-size:17px;flex:1}
+.rcard .rhead .dil{font-size:12px;color:var(--acc);border-bottom:1px solid var(--acc);padding-bottom:1px}
+.rtable{width:100%;border-collapse:collapse;font-size:13px}
+.rtable th{color:var(--sub);font-weight:600;font-size:10px;text-align:right;padding:8px 6px;
+  border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:1.4px}
+.rtable td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-size:13px}
+.rtable td:first-child,.rtable th:first-child{text-align:left}
+.rtable .iso{font-weight:700}
+.rtable .t35{font-family:var(--serif);font-size:16px;font-weight:400}
+.rtable .t35.conv{color:var(--acc)}
+.rtable .sub{color:var(--sub);font-size:11px}
+.rtable a{color:var(--acc);text-decoration:none;border-bottom:1px solid var(--acc)}
+.rtable .na{color:#c9c2b2}
+.tnote{font-size:11px;color:var(--sub);padding:6px 0 4px;font-style:italic}
+.empty{padding:34px 10px;text-align:center;color:var(--sub);font-family:var(--serif);font-style:italic}
+
+.of-head{display:flex;gap:0;margin:6px 0 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.of-head::-webkit-scrollbar{display:none}
+.of-head button{flex:none;background:transparent;color:var(--sub);padding:9px 15px;font-size:12px;
+  border-bottom:2px solid transparent}
+.of-head button.on{color:var(--ink);border-bottom-color:var(--acc);font-weight:700}
+.otable{width:100%;border-collapse:collapse;font-size:12.5px}
+.otable th{background:transparent;text-align:left;padding:9px 8px;font-size:10px;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--sub);border-bottom:1px solid var(--ink)}
+.otable td{padding:8px;border-bottom:1px solid var(--line)}
+.otable .r{text-align:right;font-family:var(--serif);font-size:14px}
+.otable tr:nth-child(even) td{background:rgba(0,0,0,.015)}
+
+.about{background:transparent;border-top:1px solid var(--ink);padding:14px 0;font-size:14px}
+.about h3{font-size:11px;margin:18px 0 8px;letter-spacing:2px;text-transform:uppercase;color:var(--acc);font-weight:700}
+.about p{margin:6px 0}
+.about .muted{color:var(--sub);font-size:13px}
+.about table{border-collapse:collapse;width:100%;font-size:13px;margin:10px 0}
+.about td,.about th{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left}
+.about a{color:var(--acc)}
+.badge{display:inline-block;border:1px solid var(--line);padding:0 7px;font-size:11px;margin:1px 2px;color:var(--sub)}
+
+footer{text-align:center;color:var(--sub);font-size:11px;padding:26px 16px 44px;font-family:var(--serif);font-style:italic}
+.style-switch{margin-bottom:10px;font-style:normal;font-family:var(--sans);font-size:12px}
+.style-switch a{color:var(--acc);text-decoration:none;margin:0 4px;border-bottom:1px solid var(--acc)}
+.style-switch b{color:var(--ink)}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>🎞️ 黑白胶片显影时间库<small id="hdr-meta"></small></h1>
+  <button class="icon-btn" id="btn-dark" title="暗房模式">🌙</button>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-tab="search" class="on">🔍 查配方</button>
+  <button data-tab="official">📋 官方数据</button>
+  <button data-tab="fav">❤️ 收藏</button>
+  <button data-tab="about">ℹ️ 说明</button>
+</nav>
+
+<main>
+  <!-- ============ 查配方 ============ -->
+  <section class="page on" id="tab-search">
+    <div class="ctl-row" style="margin:4px 0 10px">
+      <div class="seg" id="seg-kind">
+        <button data-k="neg" class="on">🎞️ 黑白负片</button>
+        <button data-k="rev">🔄 黑白正冲</button>
+      </div>
+    </div>
+    <div id="mode-bar" style="display:none">
+      <div class="ctl-row" style="margin-bottom:8px">
+        <div class="seg" id="seg-mode">
+          <button data-m="inv" class="on">手冲</button>
+          <button data-m="rot85">滚冲 ×0.85</button>
+          <button data-m="rot90">滚冲 ×0.90</button>
+        </div>
+      </div>
+    </div>
+    <div id="view-filmlist">
+      <div class="searchbar">
+        <input id="film-q" type="search" placeholder="搜索胶片名，如 HP5 / Tri-X / Fomapan…" autocomplete="off">
+        <span class="mag">🔍</span>
+      </div>
+      <div class="hot" id="hot"></div>
+      <div class="film-list" id="film-list"></div>
+    </div>
+    <div id="view-recipe" style="display:none"></div>
+    <div id="view-reversal" style="display:none">
+      <div class="searchbar">
+        <input id="rev-q" type="search" placeholder="搜索胶片或反转套药，如 Tri-X / Retro 80S / Scala…" autocomplete="off">
+        <span class="mag">🔍</span>
+      </div>
+      <div id="rev-cards"></div>
+    </div>
+  </section>
+
+  <!-- ============ 官方数据 ============ -->
+  <section class="page" id="tab-official">
+    <div class="of-head" id="of-tabs"></div>
+    <div class="searchbar"><input id="of-q" type="search" placeholder="搜索胶片或显影液…" autocomplete="off"><span class="mag">🔍</span></div>
+    <div style="overflow:auto"><table class="otable" id="of-table"></table></div>    <p class="note-line" id="of-note"></p>
+  </section>
+
+  <!-- ============ 收藏 ============ -->
+  <section class="page" id="tab-fav">
+    <p class="note-line" style="padding:8px 2px">收藏的胶片（点击打开配方）：</p>
+    <div class="film-list" id="fav-list"></div>
+  </section>
+
+  <!-- ============ 说明 ============ -->
+  <section class="page" id="tab-about">
+    <div class="about" id="about-box"></div>
+  </section>
+</main>
+
+<footer><div class="style-switch">样式：<a href="./">经典</a> · <a href="style-darkroom.html">暗房胶片</a> · <b>杂志手册</b></div>数据仅供个人参考 · 时间为起点值，请按自己的设备微调</footer>
+
+<script src="data_web.js"></script>
+<script>
+'use strict';
+const DB = window.DEVDB;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = t => t == null ? '' : (Number.isInteger(t) ? String(t) : String(Math.round((t + Number.EPSILON) * 10) / 10));
+
+/* ---------- state ---------- */
+const state = { tab:'search', kind:'neg', film:null, mode:'inv', temp:20, dev:null, of:Object.keys(DB.official)[0], ofQ:'' };
+let favs;
+try { favs = new Set(JSON.parse(localStorage.getItem('devdb_favs') || '[]')); }
+catch (e) { favs = new Set(); } // 本地存储损坏时兜底，避免整页崩溃
+const HOT = ['Ilford HP5+','Kodak Tri-X 400','Ilford FP4+','Fomapan 400','Kodak TMax 400','Ilford Delta 100 Pro','Fomapan 100','Rollei RPX 100','Kodak TMax 100','Ilford Pan F Plus'];
+
+/* ---------- indexes ---------- */
+const entriesByFilm = new Map();
+DB.entries.forEach(e => {
+  if (!entriesByFilm.has(e[0])) entriesByFilm.set(e[0], []);
+  entriesByFilm.get(e[0]).push(e);
+});
+
+/* ---------- time conversion ---------- */
+// baseTemp = 记录自身的官方温度；换算目标 = state.temp
+function convert(t, baseTemp){
+  if (t == null) return null;
+  let v = t;
+  if (state.mode === 'rot85') v = t * 0.85;
+  if (state.mode === 'rot90') v = t * 0.90;
+  if (state.temp !== baseTemp) v = v * Math.pow(1.1, baseTemp - state.temp);
+  return Math.round(v * 100) / 100;
+}
+const MODE_TXT = {inv:'手冲（倒置）', rot85:'滚冲 ×0.85', rot90:'滚冲 ×0.90'};
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => {
+  state.tab = b.dataset.tab;
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('section.page').forEach(x => x.classList.toggle('on', x.id === 'tab-' + state.tab));
+  if (state.tab === 'fav') renderFavs();
+  if (state.tab === 'official') renderOfficial();
+  if (state.tab === 'about') renderAbout();
+}));
+
+/* ---------- film list ---------- */
+function filmCount(fi){ return (entriesByFilm.get(fi) || []).length; }
+function renderFilmList(){
+  const q = $('#film-q').value.trim().toLowerCase();
+  const box = $('#film-list');
+  const groups = new Map();
+  DB.films.forEach((f, i) => {
+    if (q && !f.toLowerCase().includes(q)) return;
+    const key = f[0].toUpperCase();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push([f, i]);
+  });
+  const h = $('#hot');
+  if (!q) {
+    h.innerHTML = '';
+    HOT.forEach(f => {
+      const i = DB.films.indexOf(f);
+      if (i >= 0) h.insertAdjacentHTML('beforeend', `<button data-fi="${i}">${esc(f)}</button>`);
+    });
+    h.querySelectorAll('button').forEach(b => b.addEventListener('click', () => selectFilm(+b.dataset.fi)));
+  } else {
+    h.innerHTML = ''; // 搜索时清空热门，避免残留
+  }
+  if (groups.size === 0) { box.innerHTML = '<div class="hint">没有找到匹配的胶片</div>'; return; }
+  let html = '';
+  [...groups.keys()].sort().forEach(k => {
+    html += `<div class="film-letter">${k}</div>`;
+    groups.get(k).forEach(([f, i]) => {
+      html += `<div class="film-item" data-fi="${i}">
+        <span class="nm">${esc(f)}</span>
+        <span class="cnt">${filmCount(i)} 条</span>
+        <button class="fav ${favs.has(f) ? 'on' : ''}" data-f="${esc(f)}">${favs.has(f) ? '★' : '☆'}</button>
+      </div>`;
+    });
+  });
+  box.innerHTML = html;
+  box.querySelectorAll('.film-item').forEach(el => el.addEventListener('click', e => {
+    if (e.target.classList.contains('fav')) { toggleFav(e.target.dataset.f, e.target); return; }
+    selectFilm(+el.dataset.fi);
+  }));
+}
+function toggleFav(name, btn){
+  if (favs.has(name)) { favs.delete(name); btn.textContent = '☆'; btn.classList.remove('on'); }
+  else { favs.add(name); btn.textContent = '★'; btn.classList.add('on'); }
+  localStorage.setItem('devdb_favs', JSON.stringify([...favs]));
+}
+$('#film-q').addEventListener('input', renderFilmList);
+
+/* ---------- recipe view ---------- */
+function selectFilm(fi){
+  state.film = fi; state.dev = null;
+  state.kind = 'neg';
+  $('#seg-kind').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.k === 'neg'));
+  $('#view-filmlist').style.display = 'none';
+  $('#view-reversal').style.display = 'none';
+  $('#view-recipe').style.display = 'block';
+  $('#mode-bar').style.display = '';
+  try { history.pushState({v: 'recipe'}, ''); } catch (e) {} // 支持系统返回键回到列表
+  window.scrollTo({top:0});
+  renderRecipe();
+}
+function backToList(){
+  state.film = null;
+  $('#view-recipe').style.display = 'none';
+  $('#view-filmlist').style.display = '';
+  $('#mode-bar').style.display = 'none';
+  window.scrollTo({top:0});
+}
+function goBackFromRecipe(){
+  // 页内 ← 按钮：优先回退历史（安全，只回退本站内 push 的 state），否则直接回列表
+  try { if (history.state && history.state.v === 'recipe') { history.back(); return; } } catch (e) {}
+  backToList();
+}
+// 系统返回键 / 浏览器返回：从配方视图回到胶片列表
+window.addEventListener('popstate', () => {
+  if (state.film != null) backToList();
+});
+function renderRecipe(){
+  if (state.film == null) return;
+  const film = DB.films[state.film];
+  const v = $('#view-recipe');
+  const isFav = favs.has(film);
+  let html = `<div class="view-head">
+    <button class="back" id="btn-back">←</button>
+    <h2>${esc(film)}</h2>
+    <button class="icon-btn" id="btn-fav" title="收藏">${isFav ? '★' : '☆'}</button>
+  </div>
+  <div class="ctl">
+    <div class="ctl-row">
+      <div class="chips" id="chips-dev"></div>
+    </div>
+    <div class="ctl-row">
+      <div class="tempwrap">
+        <span style="font-size:12px;color:var(--sub)">温度</span>
+        <input type="range" id="temp-range" min="15" max="30" step="0.5" value="20">
+        <span class="tv" id="temp-val">20°C</span>
+      </div>
+    </div>
+  </div>
+  <div id="rcards"></div>`;
+  v.innerHTML = html;
+  $('#btn-back').addEventListener('click', goBackFromRecipe);
+  $('#btn-fav').addEventListener('click', () => { toggleFav(film, $('#btn-fav')); });
+
+  syncModeBar();
+  const tr = $('#temp-range'), tv = $('#temp-val');
+  tr.addEventListener('input', () => { state.temp = +tr.value; tv.textContent = state.temp + '°C'; renderCards(); });
+
+  // dev selector: ≤8 种用横向 chips，>8 种改用下拉菜单（手机端更好操作）
+  const devs = [...new Set((entriesByFilm.get(state.film) || []).map(e => e[1]))].sort((a, b) => DB.devs[a].localeCompare(DB.devs[b]));
+  const cd = $('#chips-dev');
+  if (devs.length > 8) {
+    cd.innerHTML = `<select class="dev-select" id="dev-sel" aria-label="选择显影液">
+      <option value="-1" ${state.dev == null ? 'selected' : ''}>全部显影液（${devs.length}）</option>
+      ${devs.map(d => `<option value="${d}" ${state.dev === d ? 'selected' : ''}>${esc(DB.devs[d])}</option>`).join('')}
+    </select>`;
+    $('#dev-sel').addEventListener('change', e => {
+      state.dev = +e.target.value === -1 ? null : +e.target.value;
+      renderCards();
+    });
+  } else {
+    cd.innerHTML = `<button class="${state.dev == null ? 'on' : ''}" data-d="-1">全部 ${devs.length}</button>` +
+      devs.map(d => `<button class="${state.dev === d ? 'on' : ''}" data-d="${d}">${esc(DB.devs[d])}</button>`).join('');
+    cd.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      state.dev = +b.dataset.d === -1 ? null : +b.dataset.d;
+      cd.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      renderCards();
+    }));
+  }
+  renderCards();
+}
+function renderCards(){
+  const entries = (entriesByFilm.get(state.film) || []).filter(e => state.dev == null || e[1] === state.dev);
+  // group by (dev, dil)
+  const groups = new Map();
+  entries.forEach(e => {
+    const k = e[1] + '|' + e[2];
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  });
+  const box = $('#rcards');
+  if (groups.size === 0) { box.innerHTML = '<div class="empty">该显影液下暂无配方</div>'; return; }
+  const convNote = state.temp !== 20 || state.mode !== 'inv';
+  let html = '';
+  const sorted = [...groups.entries()].sort((a, b) => DB.devs[a[0].split('|')[0]].localeCompare(DB.devs[b[0].split('|')[0]]));
+  sorted.forEach(([k, rows]) => {
+    const devI = +k.split('|')[0], dilI = +k.split('|')[1];
+    const dev = DB.devs[devI], dil = dilI >= 0 ? DB.dils[dilI] : null;
+    // rows: group by iso
+    const byIso = new Map();
+    rows.forEach(r => { const i = r[3]; if (!byIso.has(i)) byIso.set(i, []); byIso.get(i).push(r); });
+    const isos = [...byIso.keys()].sort((a, b) => (a < 0 ? 1e9 : a) - (b < 0 ? 1e9 : b));
+    html += `<div class="rcard"><div class="rhead"><span class="dn">${esc(dev)}</span>${dil ? `<span class="dil">${esc(dil)}</span>` : ''}</div>
+    <table class="rtable"><thead><tr><th>ISO</th><th>35mm</th><th>120</th><th>页片</th><th>温度</th><th>来源</th></tr></thead><tbody>`;
+    isos.forEach(isoI => {
+      const recs = byIso.get(isoI);
+      // pick best record for current temp: exact match else 20C else nearest
+      let rec = recs.find(r => r[7] === state.temp) || recs.find(r => r[7] === 20) || recs.reduce((a, b) => Math.abs(a[7] - state.temp) <= Math.abs(b[7] - state.temp) ? a : b);
+      const exact = rec[7] === state.temp;
+      // 滚冲倍数始终应用；温度仅在与官方记录温度不同时才换算（convert 内部处理）
+      const t35 = convert(rec[4], rec[7]);
+      const t120 = convert(rec[5], rec[7]);
+      const tsh = convert(rec[6], rec[7]);
+      const isoLabel = isoI >= 0 ? DB.isos[isoI] : '—';
+      const convMark = state.mode !== 'inv' || !exact;
+      // 无换算时优先显示官方原始格式（如 3+3 两浴、8-10 范围、34*）；换算时显示数值
+      const rawT = (rec.length > 9 && rec[9] >= 0 && DB.raws) ? DB.raws[rec[9]] : null;
+      const cell = (raw, val) => {
+        if (!convMark && rawT && raw) return esc(raw) + '′';
+        return val != null ? fmt(val) + '′' : '<span class="na">—</span>';
+      };
+      html += `<tr>
+        <td class="iso">${esc(isoLabel)}</td>
+        <td class="t35 ${convMark ? 'conv' : ''}">${cell(rawT && rawT[0], t35)}</td>
+        <td>${cell(rawT && rawT[1], t120)}</td>
+        <td>${cell(rawT && rawT[2], tsh)}</td>
+        <td class="sub">${rec[7]}°C${!exact ? '→' + state.temp + '°C' : ''}</td>
+        <td>${rec[8] ? `<a href="https://www.digitaltruth.com/devchart.php?devrow=${rec[8]}" target="_blank" rel="noopener">备注</a>` : '<span class="na">—</span>'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+    if (byIso.size > 1) html += `<div class="tnote">多行 = 不同温度或来源记录，已按当前设置选取</div>`;
+    html += `</div>`;
+  });
+  box.innerHTML = html;
+  const nl = document.createElement('div');
+  nl.className = 'note-line';
+  nl.textContent = (convNote ? `当前显示：${MODE_TXT[state.mode]} @ ${state.temp}°C（换算值，非官方实测）· ` : '当前显示：官方原值 @ 20°C · ') +
+    '点击“来源”可查看 MDC 原始备注';
+  box.prepend(nl);
+}
+
+/* ---------- official data ---------- */
+const OF_META = {
+  ilfotec_hc: {label:'Ilfotec HC (Ilford)', cols:['film','developer','iso','dilution','temp_c','time_min','notes'], note:'Ilford 官方 2025-02 数据表。1+11@24°C 为连续搅拌/机冲/滚冲；1+15/1+31/1+47@20°C 为小罐手冲。'},
+  foma: {label:'Foma 官方', cols:['film','developer','dilution','temp_c','t_min_minutes','t_max_minutes','notes'], note:'Foma 官方目录：螺旋罐 30s 连续 + 每分钟 10s 搅拌；范围为低反差→高反差。'},
+  kodak_trix: {label:'Kodak Tri-X 400', cols:['film','developer','iso','temp_c','agitation','time_min'], note:'Kodak F-4017：小罐 30s 间隔倒置 / 大罐 60s 间隔。'},
+  rollei: {label:'Rollei 官方', cols:['film','developer','iso','dilution','temp_c','time_min'], note:'Rollei RPX/Retro/Superpan 数据表 2021-2025，20°C，γ≈0.65。'},
+};
+function renderOfficial(){
+  const tabs = $('#of-tabs');
+  tabs.innerHTML = Object.entries(OF_META).map(([k, m]) => `<button class="${state.of === k ? 'on' : ''}" data-k="${k}">${m.label}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { state.of = b.dataset.k; renderOfficial(); }));
+  const q = state.ofQ.toLowerCase();
+  const rows = DB.official[state.of];
+  const meta = OF_META[state.of];
+  let html = '<thead><tr>';
+  meta.cols.forEach(c => html += `<th>${c === 't_min_minutes' ? '最短(min)' : c === 't_max_minutes' ? '最长(min)' : c}</th>`);
+  html += '</tr></thead><tbody>';
+  let n = 0;
+  rows.forEach(r => {
+    const hay = [r.f, r.d, r.i, r.dl, r.a, r.n].filter(Boolean).join(' ').toLowerCase();
+    if (q && !hay.includes(q)) return;
+    n++;
+    html += `<tr><td>${esc(r.f)}</td><td>${esc(r.d)}</td>`;
+    if (meta.cols.includes('iso')) html += `<td>${esc(r.i || '—')}</td>`;
+    if (meta.cols.includes('dilution')) html += `<td>${esc(r.dl || '—')}</td>`;
+    html += `<td>${r.T}°C</td>`;
+    if (meta.cols.includes('agitation')) html += `<td>${esc(r.a)}</td>`;
+    html += `<td class="r">${fmt(r.t)}′</td>`;
+    if (meta.cols.includes('t_max_minutes')) html += `<td class="r">${fmt(r.mx)}′</td>`;
+    if (meta.cols.includes('notes')) html += `<td class="sub">${esc(r.n || '')}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  $('#of-table').innerHTML = html;
+  $('#of-note').textContent = `${meta.note} 共 ${n} 条`;
+}
+$('#of-q').addEventListener('input', e => { state.ofQ = e.target.value; renderOfficial(); });
+
+/* ---------- favs ---------- */
+function renderFavs(){
+  const box = $('#fav-list');
+  const list = DB.films.filter(f => favs.has(f));
+  if (list.length === 0) { box.innerHTML = '<div class="hint">还没有收藏。在胶片列表里点 ☆ 收藏。</div>'; return; }
+  box.innerHTML = list.map(f => `<div class="film-item" data-f="${esc(f)}"><span class="nm">${esc(f)}</span><span class="cnt">${filmCount(DB.films.indexOf(f))} 条</span><button class="fav on">★</button></div>`).join('');
+  box.querySelectorAll('.film-item').forEach(el => el.addEventListener('click', e => {
+    if (e.target.classList.contains('fav')) { toggleFav(e.target.dataset.f, e.target); renderFavs(); return; }
+    // 切回查配方页签再打开配方（否则视图在隐藏页签里看不到）
+    document.querySelector('#tabs button[data-tab="search"]').click();
+    selectFilm(DB.films.indexOf(el.dataset.f));
+  }));
+}
+
+/* ---------- about ---------- */
+function renderAbout(){
+  const d = DB.meta;
+  $('#about-box').innerHTML = `
+  <h3>📊 数据规模</h3>
+  <p>主库（Massive Dev Chart，更新于 ${d.mdc_updated}）：<b>${d.mdc_rows.toLocaleString()} 条</b>记录 · ${d.films} 款胶片 · ${d.devs} 种显影液 · 温度 15–40.5°C</p>
+  <h3>🔄 手冲 / 滚冲</h3>
+  <p>滚冲时间 = 手冲时间 × <b>0.85</b>（Ilford 官方规则：连续搅拌比间歇搅拌缩短约 15%）；Rollei 官方给出 10–15% 缩短区间（×0.85~0.90）。</p>
+  <h3>🌡️ 温度换算</h3>
+  <p>20°C 起每 ±1°C 时间 ∓10%（Ilford/Kodak 规则）：换算系数 = 1.1<sup>(20−T)</sup>。换算值仅为估算，有官方多温度记录的条目会优先显示官方值。</p>
+  <h3>📖 数据来源</h3>
+  <p><span class="badge">Massive Dev Chart</span> <a href="https://www.digitaltruth.com/devchart.php" target="_blank" rel="noopener">digitaltruth.com</a>（个人/教育用途，勿转载）</p>
+  <p><span class="badge">Ilford</span> Ilfotec HC 官方数据表 2025-02 · <span class="badge">Kodak</span> Tri-X F-4017 · <span class="badge">Foma</span> 官方目录 · <span class="badge">Rollei</span> 官方数据表 · <span class="badge">Labo Los Alos</span>（CC0）</p>
+  <h3>⚠️ 注意事项</h3>
+  <p class="muted">所有时间都是<b>起点值</b>：不同罐子、搅拌手法、水浴、放大机都会影响结果，请以自己的一卷测试为准。同一组合有多行记录时，可点“备注”查看 MDC 原始出处。</p>
+  <h3>🔗 FilmDev.org</h3>
+  <p class="muted">社区实测配方库（含各种温度/搅拌实测）：<a href="https://filmdev.org" target="_blank" rel="noopener">filmdev.org</a> —— 批量下载需联系作者，本库未抓取。</p>`;
+}
+
+/* ---------- dark mode ---------- */
+$('#btn-dark').addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('devdb_dark', document.body.classList.contains('dark') ? '1' : '0');
+});
+if (localStorage.getItem('devdb_dark') === '1') document.body.classList.add('dark');
+
+/* ---------- 负片 / 正冲 切换 ---------- */
+function syncModeBar(){
+  $('#seg-mode').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.m === state.mode));
+}
+function switchKind(kind){
+  state.kind = kind;
+  $('#seg-kind').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.k === kind));
+  const neg = kind === 'neg';
+  $('#view-filmlist').style.display = neg ? '' : 'none';
+  $('#view-recipe').style.display = 'none';
+  $('#view-reversal').style.display = neg ? 'none' : '';
+  $('#mode-bar').style.display = neg ? 'none' : '';
+  if (!neg) { state.film = null; renderReversal(); }
+  window.scrollTo({top: 0});
+}
+$('#seg-kind').querySelectorAll('button').forEach(b => b.addEventListener('click', () => switchKind(b.dataset.k)));
+$('#seg-mode').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  state.mode = b.dataset.m;
+  syncModeBar();
+  if (state.kind === 'rev') renderReversal();
+  else if (state.film != null) renderCards();
+}));
+$('#rev-q').addEventListener('input', renderReversal);
+
+/* ---------- 黑白正冲（反转冲洗） ---------- */
+// 正冲流程温度固定为套药官方温度，只应用滚冲倍数（不随温度滑杆换算）
+function revConvert(t){
+  if (t == null) return null;
+  let v = t;
+  if (state.mode === 'rot85') v = t * 0.85;
+  if (state.mode === 'rot90') v = t * 0.90;
+  return Math.round(v * 100) / 100;
+}
+function renderReversal(){
+  const q = ($('#rev-q').value || '').trim().toLowerCase();
+  const box = $('#rev-cards');
+  const kits = DB.reversal || [];
+  let html = '';
+  kits.forEach(k => {
+    const films = k.films || [];
+    const filmHits = q ? films.filter(f => f[0].toLowerCase().includes(q)) : null;
+    if (q && (!filmHits.length && !k.kit.toLowerCase().includes(q) && !k.note.toLowerCase().includes(q))) return;
+    const showFilms = filmHits || films;
+    const conv = state.mode !== 'inv';
+    html += `<div class="rcard">
+      <div class="rhead"><span class="dn">${esc(k.kit)}</span><span class="dil">${k.temp}°C 加工</span></div>
+      <div class="tnote">${esc(k.note)}</div>
+      <table class="rtable"><thead><tr><th>步骤</th><th>时间</th><th>说明</th></tr></thead><tbody>`;
+    k.steps.forEach(s => {
+      html += `<tr><td class="iso">${esc(s[0])}</td><td class="t35">${esc(s[1])}</td><td class="sub">${esc(s[2] || '')}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    if (films.length) {
+      html += `<div class="tnote">胶片首显 / 二显（${MODE_TXT[state.mode]}${conv ? '，已按倍数换算' : ''}）：</div>
+        <table class="rtable"><thead><tr><th>胶片</th><th>ISO</th><th>首显</th><th>二显</th></tr></thead><tbody>`;
+      showFilms.forEach(f => {
+        const t1 = revConvert(f[2]), t2 = revConvert(f[3]);
+        html += `<tr><td class="iso">${esc(f[0])}</td><td>${esc(f[1])}</td>
+          <td class="t35 ${conv ? 'conv' : ''}">${fmt(t1)}′</td>
+          <td class="t35 ${conv ? 'conv' : ''}">${fmt(t2)}′</td></tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+    html += `</div>`;
+  });
+  box.innerHTML = html || '<div class="empty">没有匹配的胶片或套药</div>';
+}
+
+/* ---------- init ---------- */
+$('#hdr-meta').textContent = `${DB.meta.films} 胶片 · ${DB.meta.devs} 显影液`;
+renderFilmList();
+// deep link: #film=Name|123[&mode=inv|rot85|rot90]  /  #of=key  /  #kind=neg|rev
+(function(){
+  const params = new URLSearchParams(location.hash.slice(1));
+  const modeP = params.get('mode');
+  if (modeP && ['inv', 'rot85', 'rot90'].includes(modeP)) state.mode = modeP;
+  const kindP = params.get('kind');
+  if (kindP === 'rev') switchKind('rev');
+  const filmP = params.get('film');
+  if (filmP) {
+    const fi = /^\d+$/.test(filmP) ? +filmP : DB.films.indexOf(filmP);
+    if (fi >= 0) selectFilm(fi);
+  }
+  const ofP = params.get('of');
+  if (ofP && DB.official[ofP]) {
+    document.querySelector('#tabs button[data-tab="official"]').click();
+    state.of = ofP;
+    renderOfficial();
+  }
+})();
+</script>
+</body>
+</html>
