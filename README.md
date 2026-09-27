@@ -18,7 +18,7 @@
 
 | 数据集 | 行数 | 胶片数 | 显影液数 | 来源 |
 |---|---|---|---|---|
-| `mdc_all.csv / .json` | **14,929** | 352 | 235 | Massive Dev Chart（digitaltruth.com，2026-07 版） |
+| `mdc_all.csv / .json` | **14,930** | 353 | 235 | Massive Dev Chart（digitaltruth.com，2026-09 版） |
 | `rotary_guide.csv` | 11,998 | — | — | 由 MDC 20°C 手冲时间换算的滚冲时间（×0.85 / ×0.90） |
 | `labo_los_alos.json` | 666 | 34 | 23 | Labo Los Alos 开源库（CC0，厂商官方数据） |
 | `official_ilfotec_hc.csv` | 74 | 11 | 1 | Ilford Ilfotec HC 官方数据表（2025-02） |
@@ -68,7 +68,8 @@ film-dev-db/
 | `developer` | 显影液（MDC 规范化短名：`D-76`、`Rodinal`、`Xtol`、`Ilfotec DD-X`、`TMax Dev`…） |
 | `dilution` | 稀释比（`1+50`、`Stock` 原液、`1+31`…） |
 | `iso` | 感光度/增感档位（如 `400`、`800`、`1600`；`100-200` 表示区间） |
-| `t35mm_min` / `t120_min` / `t_sheet_min` | 35mm / 120 / 页片（sheet）冲洗时间（分钟；空 = 该格式无数据） |
+| `t35mm_raw` / `t120mm_raw` / `t_sheet_raw` | **官方原始时间文本**（保留 `3+3` 两浴、`8-10` 范围、`34*` 等格式） |
+| `t35mm_min` / `t120_min` / `t_sheet_min` | 35mm / 120 / 页片（sheet）冲洗时间**数值**（用于换算：范围取中值、两浴取总和；空 = 该格式无数据） |
 | `temp_c` | 温度 °C |
 | `mdc_row` | MDC 官网备注行 ID（可在 https://www.digitaltruth.com/devchart.php?devrow=<id> 查看原始备注/出处） |
 | `source` | 固定 `MassiveDevChart` |
@@ -173,7 +174,7 @@ for r in hits: print(r['dilution'], r['iso'], r['t35mm_min'], r['temp_c'])
 | Labo Los Alos Dev Chart | https://github.com/labolosalos/LaboLosAlosDevChartV1 | **CC0 1.0 公有领域**，可自由使用 |
 | Ilford / Kodak / Foma / Rollei / Adox | 各厂商官网数据表 | 官方技术文档，可自由参考 |
 
-抓取说明：digitaltruth 有 Cloudflare 反爬，本库通过 r.jina.ai 渲染代理抓取（2026-07-14 版数据，"Last updated: 14-Jul-2026"）；抓取频率 ≤ 20 次/分钟，未对目标站点造成压力。
+抓取说明：digitaltruth 有 Cloudflare 反爬，本库通过 r.jina.ai 渲染代理抓取（2026-09-08 版数据，"Last updated: 8-Sep-2026"）；抓取频率 ≤ 20 次/分钟，未对目标站点造成压力。
 
 ---
 

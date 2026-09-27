@@ -68,6 +68,7 @@ section.page.on{display:block}
 .chips::-webkit-scrollbar{display:none}
 .chips button{flex:none; background:var(--chip); color:var(--chip-ink); padding:7px 12px; border-radius:99px; font-size:13px}
 .chips button.on{background:var(--acc); color:#fff}
+.chips .dev-select{width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); font-size:14px; outline:none; flex:none}
 .tempwrap{display:flex; align-items:center; gap:10px; flex:1; min-width:200px}
 .tempwrap input[type=range]{flex:1; accent-color:var(--acc)}
 .tempwrap .tv{font-weight:700; min-width:52px; text-align:center; font-size:14px}
@@ -190,12 +191,14 @@ footer{text-align:center; color:var(--sub); font-size:12px; padding:20px 10px 40
 const DB = window.DEVDB;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt = t => t == null ? '' : (Number.isInteger(t) ? String(t) : String(Math.round(t * 10) / 10));
+const fmt = t => t == null ? '' : (Number.isInteger(t) ? String(t) : String(Math.round((t + Number.EPSILON) * 10) / 10));
 
 /* ---------- state ---------- */
 const state = { tab:'search', kind:'neg', film:null, mode:'inv', temp:20, dev:null, of:Object.keys(DB.official)[0], ofQ:'' };
-const favs = new Set(JSON.parse(localStorage.getItem('devdb_favs') || '[]'));
-const HOT = ['Ilford HP5+','Kodak Tri-X 400','Ilford FP4+','Fomapan 400','Kodak T-MAX 400','Ilford Delta 100 Pro','Fomapan 100','Rollei RPX 100','Kodak TMax 100','Ilford Pan F Plus'];
+let favs;
+try { favs = new Set(JSON.parse(localStorage.getItem('devdb_favs') || '[]')); }
+catch (e) { favs = new Set(); } // 本地存储损坏时兜底，避免整页崩溃
+const HOT = ['Ilford HP5+','Kodak Tri-X 400','Ilford FP4+','Fomapan 400','Kodak TMax 400','Ilford Delta 100 Pro','Fomapan 100','Rollei RPX 100','Kodak TMax 100','Ilford Pan F Plus'];
 
 /* ---------- indexes ---------- */
 const entriesByFilm = new Map();
@@ -238,13 +241,16 @@ function renderFilmList(){
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push([f, i]);
   });
+  const h = $('#hot');
   if (!q) {
-    const h = $('#hot'); h.innerHTML = '';
+    h.innerHTML = '';
     HOT.forEach(f => {
       const i = DB.films.indexOf(f);
       if (i >= 0) h.insertAdjacentHTML('beforeend', `<button data-fi="${i}">${esc(f)}</button>`);
     });
     h.querySelectorAll('button').forEach(b => b.addEventListener('click', () => selectFilm(+b.dataset.fi)));
+  } else {
+    h.innerHTML = ''; // 搜索时清空热门，避免残留
   }
   if (groups.size === 0) { box.innerHTML = '<div class="hint">没有找到匹配的胶片</div>'; return; }
   let html = '';
@@ -280,6 +286,7 @@ function selectFilm(fi){
   $('#view-reversal').style.display = 'none';
   $('#view-recipe').style.display = 'block';
   $('#mode-bar').style.display = '';
+  try { history.pushState({v: 'recipe'}, ''); } catch (e) {} // 支持系统返回键回到列表
   window.scrollTo({top:0});
   renderRecipe();
 }
@@ -290,6 +297,15 @@ function backToList(){
   $('#mode-bar').style.display = 'none';
   window.scrollTo({top:0});
 }
+function goBackFromRecipe(){
+  // 页内 ← 按钮：优先回退历史（安全，只回退本站内 push 的 state），否则直接回列表
+  try { if (history.state && history.state.v === 'recipe') { history.back(); return; } } catch (e) {}
+  backToList();
+}
+// 系统返回键 / 浏览器返回：从配方视图回到胶片列表
+window.addEventListener('popstate', () => {
+  if (state.film != null) backToList();
+});
 function renderRecipe(){
   if (state.film == null) return;
   const film = DB.films[state.film];
@@ -314,23 +330,34 @@ function renderRecipe(){
   </div>
   <div id="rcards"></div>`;
   v.innerHTML = html;
-  $('#btn-back').addEventListener('click', backToList);
+  $('#btn-back').addEventListener('click', goBackFromRecipe);
   $('#btn-fav').addEventListener('click', () => { toggleFav(film, $('#btn-fav')); });
 
   syncModeBar();
   const tr = $('#temp-range'), tv = $('#temp-val');
   tr.addEventListener('input', () => { state.temp = +tr.value; tv.textContent = state.temp + '°C'; renderCards(); });
 
-  // dev chips: distinct devs for this film
+  // dev selector: ≤8 种用横向 chips，>8 种改用下拉菜单（手机端更好操作）
   const devs = [...new Set((entriesByFilm.get(state.film) || []).map(e => e[1]))].sort((a, b) => DB.devs[a].localeCompare(DB.devs[b]));
   const cd = $('#chips-dev');
-  cd.innerHTML = `<button class="${state.dev == null ? 'on' : ''}" data-d="-1">全部 ${devs.length}</button>` +
-    devs.map(d => `<button class="${state.dev === d ? 'on' : ''}" data-d="${d}">${esc(DB.devs[d])}</button>`).join('');
-  cd.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-    state.dev = +b.dataset.d === -1 ? null : +b.dataset.d;
-    cd.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-    renderCards();
-  }));
+  if (devs.length > 8) {
+    cd.innerHTML = `<select class="dev-select" id="dev-sel" aria-label="选择显影液">
+      <option value="-1" ${state.dev == null ? 'selected' : ''}>全部显影液（${devs.length}）</option>
+      ${devs.map(d => `<option value="${d}" ${state.dev === d ? 'selected' : ''}>${esc(DB.devs[d])}</option>`).join('')}
+    </select>`;
+    $('#dev-sel').addEventListener('change', e => {
+      state.dev = +e.target.value === -1 ? null : +e.target.value;
+      renderCards();
+    });
+  } else {
+    cd.innerHTML = `<button class="${state.dev == null ? 'on' : ''}" data-d="-1">全部 ${devs.length}</button>` +
+      devs.map(d => `<button class="${state.dev === d ? 'on' : ''}" data-d="${d}">${esc(DB.devs[d])}</button>`).join('');
+    cd.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      state.dev = +b.dataset.d === -1 ? null : +b.dataset.d;
+      cd.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      renderCards();
+    }));
+  }
   renderCards();
 }
 function renderCards(){
@@ -372,7 +399,7 @@ function renderCards(){
         <td class="t35 ${convMark ? 'conv' : ''}">${t35 != null ? fmt(t35) + '′' : '<span class="na">—</span>'}</td>
         <td>${t120 != null ? fmt(t120) + '′' : '<span class="na">—</span>'}</td>
         <td>${tsh != null ? fmt(tsh) + '′' : '<span class="na">—</span>'}</td>
-        <td class="sub">${rec[7]}°C${convMark ? '→' + state.temp + '°C' : ''}</td>
+        <td class="sub">${rec[7]}°C${!exact ? '→' + state.temp + '°C' : ''}</td>
         <td>${rec[8] ? `<a href="https://www.digitaltruth.com/devchart.php?devrow=${rec[8]}" target="_blank" rel="noopener">备注</a>` : '<span class="na">—</span>'}</td>
       </tr>`;
     });
@@ -434,6 +461,8 @@ function renderFavs(){
   box.innerHTML = list.map(f => `<div class="film-item" data-f="${esc(f)}"><span class="nm">${esc(f)}</span><span class="cnt">${filmCount(DB.films.indexOf(f))} 条</span><button class="fav on">★</button></div>`).join('');
   box.querySelectorAll('.film-item').forEach(el => el.addEventListener('click', e => {
     if (e.target.classList.contains('fav')) { toggleFav(e.target.dataset.f, e.target); renderFavs(); return; }
+    // 切回查配方页签再打开配方（否则视图在隐藏页签里看不到）
+    document.querySelector('#tabs button[data-tab="search"]').click();
     selectFilm(DB.films.indexOf(el.dataset.f));
   }));
 }
